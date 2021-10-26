@@ -58,13 +58,13 @@ mainMenu = () => {
                     addEmployee();
                     break;  
                 case "Update Employee Role":
-
+                    updateRole();
                     break;  
                 case "View All Roles":
                     viewAllRoles();
                     break;  
                 case "Add Role":
-
+                    addRole()
                     break;
                 case "View All Departments":
                     viewAllDepartments();
@@ -81,33 +81,57 @@ mainMenu = () => {
         }) 
 }    
 
-// viewAllEmployees = () => {
+viewAllEmployees = () => {
     
-//     db.query("SELECT * FROM employee", (err, results) => {
-//         if(err){
-//             console.log(err)
-//         }
-//         return console.table(results)
-//     })
-//     setTimeout (() => {
-//     mainMenu()
-//     },2000)
-// }
-
-const viewAllEmployees = () => {
-    let query = ("SELECT * FROM employee")
-
-    db.promise().query(query, (err, result) => {
-        if(err) throw err;
-
-        console.table(result)
+    db.query(`SELECT e.id, e.first_name, e.last_name, r.title, d.name AS department, r.salary, CONCAT(m.first_name, ' ', m.last_name) As manager
+    FROM employee e
+    LEFT JOIN roles r
+        ON e.roles_id = r.id
+    LEFT JOIN department d
+    ON d.id = r.department_id
+    LEFT JOIN employee m 
+        ON m.id = e.manager_id`,
+        
+    // "SELECT * FROM employee", 
+    
+    (err, results) => {
+        if(err){
+            console.log(err)
+            mainMenu();
+            return;
+        }
+        console.table(results)
+        return mainMenu();
     })
 }
 
+
 addEmployee = () => {
-    // query db for list of avaliable roles to insert into question below
-    
-    
+    let managers = [];
+    let rolesArr = [];
+   
+    db.query("Select title from roles", (err, results) => {
+        if (err) {
+            throw err
+        } else {
+            for(let i=0; i<results.length; i++){
+            rolesArr.push(results[i].title)   
+        }
+        }
+
+    })
+
+    db.query("SELECT first_name, last_name, manager_id FROM employee WHERE manager_id IS NOT NULL", (err, results) => {
+        if (err) {
+           throw err
+        } else {
+            for(let i=0; i<results.length; i++){
+            managers.push(`${results[i].first_name} ${results[i].last_name} id: ${results[i].manager_id}`)  
+        }
+        }
+
+    }) 
+
     inquirer
         .prompt([
             {
@@ -122,8 +146,9 @@ addEmployee = () => {
             },
             {
                 type: "list",
-                name: "role",
-                message: "INSERT ROLES TO CHOSE FROM HERE"
+                name: "title",
+                message: "What is the employees role?",
+                choices: rolesArr
             },
             {
                 type: "input",
@@ -137,7 +162,55 @@ addEmployee = () => {
                 default: false
             }
         ])
-        // add check for manager or not here then insert everything into corresponding fields
+        
+
+
+    .then(data => {
+        let first = data.first_name;
+        let last = data.last_name;
+        let roleId = rolesArr.indexOf(data.title)+1 
+
+
+
+       if(data.isManager === true) {
+            db.query("INSERT INTO employee SET ?", 
+            {
+                first_name: first,
+                last_name: last,
+                roles_id: roleId
+            })
+            console.log("Successfully added manager!")
+            mainMenu();
+        }
+        else{
+            inquirer
+                .prompt([
+                    {
+                        type: "list",
+                        name: "manager",
+                        message: "Who is this employees manager?",
+                        choices: managers
+                    }
+                ])
+                .then(data => {
+                    //tun last digits of managers array into number again 
+                    var manId = data.manager.match(/\d+/)
+                    db.query("INSERT INTO employee SET ?",
+                        {
+                            first_name: first,
+                            last_name: last,
+                            roles_id: roleId,
+                            manager_id: manId
+                        } 
+                    )
+                    console.log("Successfully added employee and assigned their manager!")
+                    mainMenu();
+                })
+        }
+
+
+
+    })
 }
 
 updateRole = () => {
@@ -169,20 +242,36 @@ updateRole = () => {
 
 }
 
-
-
 viewAllRoles = () => {
     db.query("SELECT * FROM roles", (err, results) => {
         if(err){
             console.log(err)
         }
         console.table(results)
-        console.log("\n")
+        mainMenu();
     })
-    mainMenu()
-    
 
 }  
+
+addRole = () => {
+    
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                name: "role",
+                message: "What is the name of the new role?"
+            },
+            {
+                type: "list",
+                name: "department",
+                message: "What department does this role belong to?",
+                choices: "DEPARTMENT ARRAY"
+            }
+        ])
+        .then
+            //INSERT THAT SHIT
+}
 
 viewAllDepartments = () => {
     db.query("SELECT * FROM department", (err, results) => {
@@ -193,3 +282,9 @@ viewAllDepartments = () => {
     })
     mainMenu()
 }
+
+
+
+
+
+
