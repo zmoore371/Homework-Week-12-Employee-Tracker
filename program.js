@@ -66,7 +66,7 @@ mainMenu = () => {
                     break;
 
             }
-                
+           
         }) 
 }    
 
@@ -301,10 +301,6 @@ addRole = () => {
             let role = data.role
             let departmentId = data.department.match(/\d+/)
             let salary = data.salary
-
-            console.log(role)
-            console.log(departmentId)
-            console.log(salary)
 
             db.query("INSERT INTO roles SET ?", {
                 title: role,
