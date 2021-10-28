@@ -3,16 +3,6 @@ const inquirer = require("inquirer");
 const consoleTable = require("console.table")
 const { restoreDefaultPrompts } = require("inquirer");
 
-
-
-// const dbCredientials = {
-//     host: 'localhost',
-//     user: 'root',
-//     port: 3306,
-//     password: '12345678',
-//     database: 'workforce_db'
-// }
-
 const db = mysql.createConnection(
     {
     host: 'localhost',
@@ -32,7 +22,6 @@ db.connect((err) => {
         if(err) {
             console.log(err)
         }
-        // console.log(result)
         mainMenu();
     })
 });
@@ -91,9 +80,7 @@ viewAllEmployees = () => {
     ON d.id = r.department_id
     LEFT JOIN employee m 
         ON m.id = e.manager_id`,
-        
-    // "SELECT * FROM employee", 
-    
+
     (err, results) => {
         if(err){
             console.log(err)
@@ -104,7 +91,6 @@ viewAllEmployees = () => {
         return mainMenu();
     })
 }
-
 
 addEmployee = () => {
     let managers = [];
@@ -121,12 +107,12 @@ addEmployee = () => {
 
     })
 
-    db.query("SELECT first_name, last_name, manager_id FROM employee WHERE manager_id IS NOT NULL", (err, results) => {
+    db.query("SELECT first_name, last_name, id FROM employee WHERE manager_id IS NULL", (err, results) => {
         if (err) {
            throw err
         } else {
             for(let i=0; i<results.length; i++){
-            managers.push(`${results[i].first_name} ${results[i].last_name} id: ${results[i].manager_id}`)  
+            managers.push(`${results[i].first_name} ${results[i].last_name} id: ${results[i].id}`)  
         }
         }
 
@@ -149,11 +135,6 @@ addEmployee = () => {
                 name: "title",
                 message: "What is the employees role?",
                 choices: rolesArr
-            },
-            {
-                type: "input",
-                name: "salary",
-                message: "What is the employees yearly salary?"
             },
             {
                 type: "confirm",
@@ -214,31 +195,62 @@ addEmployee = () => {
 }
 
 updateRole = () => {
-    //get all employees to list
-    // get all avaliable roles to list 
+    let rolesArr = [];
+    let emp = [];
+
+    db.query("Select id, title from roles", (err, results) => {
+        if (err) {
+            throw err
+        } else {
+            for(let i=0; i<results.length; i++){
+            rolesArr.push(`${results[i].title}: ${results[i].id}`)   
+        }
+        }
+    })
+
     
-    inquirer
+    db.query("SELECT e.first_name, e.last_name, e.id, r.title FROM employee e LEFT JOIN roles r ON e.roles_id = r.id", (err, results) => {
+        if (err) {
+            throw err
+        } else {
+            for(let i=0; i<results.length; i++){
+            emp.push(`${results[i].id} ${results[i].first_name} ${results[i].last_name}: ${results[i].title}`) 
+        }
+        }
+
+        inquirer
         .prompt([
             {
             type: "list",
             name: "selectedEmployee",
             message: "Chose employee to update role:",
-            choices: "CHOICE ARRAY"
+            choices: emp
             }
         ])
-        .then
-            //selected employee
+        .then(data => {
+            let selected = data.selectedEmployee.match(/\d+/)
+
             inquirer 
                 .prompt([
                     {
                         type: "list",
                         name: "newRole",
                         message: "What is the employees new role",
-                        choices: "CHOICE ARRAY"
+                        choices: rolesArr
                     }
                 ])
-        .then
-            //insert new changes into database, return to main
+            .then(data => {
+            newRole = data.newRole.match(/\d+/)
+            db.query("UPDATE employee SET roles_id = ? where id = ?",[newRole, selected] )
+            console.log("Success!")
+            mainMenu();
+            })
+            
+        })
+
+
+
+    })
 
 }
 
