@@ -21,6 +21,10 @@
    ## Usage
    To showcase MYSQL, Inquirer and database managment.
    
+
+   https://user-images.githubusercontent.com/87740245/139321325-864f53f6-ca08-40ef-bf06-92966f7183bb.mp4
+
+
    ## License
    [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
    <br />
