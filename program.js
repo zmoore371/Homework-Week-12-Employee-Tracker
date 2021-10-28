@@ -59,7 +59,7 @@ mainMenu = () => {
                     viewAllDepartments();
                     break;
                 case "Add Department":
-
+                    addDepartment();
                     break;
                 case "Quit":
                     process.exit(1)
@@ -266,7 +266,17 @@ viewAllRoles = () => {
 }  
 
 addRole = () => {
-    
+    departments = []
+    db.query("SELECT id, name FROM department", (err, results) => {
+        if (err) {
+            throw err
+        } else {
+            for(i=0; i<results.length; i++){
+                departments.push(`${results[i].id}: ${results[i].name}`)
+            }
+        }
+    }
+    )
     inquirer
         .prompt([
             {
@@ -278,11 +288,35 @@ addRole = () => {
                 type: "list",
                 name: "department",
                 message: "What department does this role belong to?",
-                choices: "DEPARTMENT ARRAY"
+                choices: departments
+            },
+            {
+                type: "input",
+                name: "salary",
+                message: "What is the yearly salary for this role?"
             }
+
         ])
-        .then
-            //INSERT THAT SHIT
+        .then(data => {
+            let role = data.role
+            let departmentId = data.department.match(/\d+/)
+            let salary = data.salary
+
+            console.log(role)
+            console.log(departmentId)
+            console.log(salary)
+
+            db.query("INSERT INTO roles SET ?", {
+                title: role,
+                salary: salary,
+                department_id: departmentId[0]
+            })
+
+            console.log("Successfully added new role")
+            mainMenu();
+
+        })
+    
 }
 
 viewAllDepartments = () => {
@@ -291,11 +325,30 @@ viewAllDepartments = () => {
             console.log(err)
         }
         console.table(results)
+        mainMenu();
     })
-    mainMenu()
+    
 }
 
-
+addDepartment = () => {
+    inquirer
+        .prompt([
+            {
+                type: "input",
+                name: "department",
+                message: "What is the new department name?"
+            },
+        ])
+        .then(data => {
+            let department = data.department;
+            
+            db.query("INSERT INTO department SET ?",{
+                name: department
+            })
+            console.log("Successfully added department!")
+            mainMenu();
+        })
+}
 
 
 
